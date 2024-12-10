@@ -1,0 +1,243 @@
+---
+title: "STA309-Final-Hera-Dashnyam"
+author: "Hera Dashnyam"
+date: "2024-12-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Part 1: DATA HANDLING & MODELING
+
+Load the data:
+
+```{r, message=FALSE, warning=FALSE}
+# Required libraries
+library(tidyverse)
+library(caret)
+library(randomForest)
+library(rpart)
+library(rpart.plot)
+library(gridExtra)
+library(ggplot2)
+
+# The data
+diabetes_data <- read_csv("diabetes_data.csv")
+```
+
+Data cleaning:
+
+```{r, message=FALSE, warning=FALSE}
+# Categorical variables into factors
+diabetes_data <- diabetes_data %>%
+  mutate(
+    gender = as.factor(gender),
+    hypertension = as.factor(hypertension),
+    heart_disease = as.factor(heart_disease),
+    smoking_history = as.factor(smoking_history),
+    diabetes = as.factor(diabetes)
+  )
+```
+
+Splitting the data into training & test sets:
+
+```{r, message=FALSE, warning=FALSE}
+# Seed
+set.seed(123)
+
+# Create training (80%) and test (20%) datasets
+train_index <- createDataPartition(diabetes_data$diabetes, p = 0.8, list = FALSE)
+train_data <- diabetes_data[train_index, ]
+test_data <- diabetes_data[-train_index, ]
+
+```
+
+Cross-validation:
+
+```{r, message=FALSE, warning=FALSE}
+# Repeated 5-fold cross-validation
+train_control <- trainControl(
+  method = "repeatedcv",
+  number = 5,
+  repeats = 10,
+  savePredictions = "final"
+)
+
+```
+
+Model training - Logistic Regression:
+
+```{r, message=FALSE, warning=FALSE}
+# Logistic Regression
+logistic_model <- train(
+  diabetes ~ ., 
+  data = train_data, 
+  method = "glm", 
+  family = "binomial", 
+  trControl = train_control
+)
+summary(logistic_model)
+
+```
+
+## Logistic Regression Model Summary
+
+The logistic regression results show that HbA1c_level, blood_glucose_level, bmi, age, and hypertension are statistically significant predictors of diabetes. Notably, HbA1c_level has the highest positive impact, reinforcing its importance in identifying diabetic patients.
+
+Model training - Decision Tree:
+
+```{r, message=FALSE, warning=FALSE}
+# Decision Tree
+tree_model <- rpart(
+  diabetes ~ ., 
+  data = train_data, 
+  method = "class"
+)
+
+# Plot
+rpart.plot(tree_model)
+
+```
+
+## Decision Tree Plot
+
+The decision tree visualizes how different predictors contribute to diabetes prediction. Key variables like HbA1c_level, blood_glucose_level, age, and bmi are used at different splits to classify patients as diabetic or non-diabetic. The first split based on HbA1c_level < 6.7 highlights its strong predictive power, while subsequent splits refine predictions further.
+
+Model training - Random Forest:
+
+```{r, message=FALSE, warning=FALSE}
+# Random Forest
+rf_model <- randomForest(
+  diabetes ~ ., 
+  data = train_data, 
+  ntree = 500, 
+  importance = TRUE
+)
+
+# Variable importance
+varImpPlot(rf_model)
+
+```
+
+## Random Forest Variable Importance Plot
+
+The variable importance plot from the Random Forest model identifies HbA1c_level and blood_glucose_level as the most significant predictors of diabetes. Other important factors include age, bmi, and hypertension. This ranking aligns with medical understanding, as these variables are known risk factors for diabetes.
+
+# Part 2: MODEL COMPARISON
+
+Evaluate models on test data:
+
+```{r, message=FALSE, warning=FALSE}
+# Predict and evaluate Logistic Regression
+logistic_preds <- predict(logistic_model, newdata = test_data)
+logistic_conf_matrix <- confusionMatrix(logistic_preds, test_data$diabetes)
+
+# Predict and evaluate Decision Tree
+tree_preds <- predict(tree_model, newdata = test_data, type = "class")
+tree_conf_matrix <- confusionMatrix(tree_preds, test_data$diabetes)
+
+# Predict and evaluate Random Forest
+rf_preds <- predict(rf_model, newdata = test_data)
+rf_conf_matrix <- confusionMatrix(rf_preds, test_data$diabetes)
+
+# Print accuracy and other metrics
+logistic_conf_matrix
+tree_conf_matrix
+rf_conf_matrix
+```
+
+## Random Forest Confusion Matrix
+
+The Random Forest model achieved an accuracy of 91.5%, with balanced sensitivity (93.3%) and specificity (88.8%). This demonstrates its robustness in correctly classifying both diabetic and non-diabetic patients. The high kappa value (0.8225) further confirms strong agreement between predictions and actual classifications.
+
+Compare model performance:
+
+```{r, message=FALSE, warning=FALSE}
+# A summary dataframe of model performances
+model_comparison <- data.frame(
+  Model = c("Logistic Regression", "Decision Tree", "Random Forest"),
+  Accuracy = c(logistic_conf_matrix$overall["Accuracy"],
+               tree_conf_matrix$overall["Accuracy"],
+               rf_conf_matrix$overall["Accuracy"])
+)
+
+# Plot model comparison
+plot1 <- 
+ggplot(model_comparison, aes(x = Model, y = Accuracy, fill = Model)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("Decision Tree" = "orchid", 
+                               "Logistic Regression" = "slateblue", 
+                               "Random Forest" = "turquoise")) +
+  labs(
+    title = "Model Accuracy Comparison",
+    x = "Model",
+    y = "Accuracy"
+  ) +
+  theme_minimal()
+
+ggsave("plot1.png", plot = plot1, width = 12, height = 8)
+plot1
+```
+
+## Model Accuracy Comparison Bar Plot
+
+The bar plot compares the accuracy of three models: Decision Tree, Logistic Regression, and Random Forest. Random Forest achieved the highest accuracy, followed closely by Logistic Regression. This indicates that ensemble methods like Random Forest provide better predictive performance by reducing overfitting.
+
+# Part 3: DASHBOARD / INFOGRAPHIC
+
+Visuals:
+
+```{r, message=FALSE, warning=FALSE}
+# Plot
+plot2 <- ggplot(diabetes_data, aes(x = bmi, fill = diabetes)) +
+  geom_density(alpha = 0.5) +
+  labs(
+    title = "BMI Distribution by Diabetes Status",
+    x = "BMI",
+    y = "Density"
+  ) +
+  theme_minimal()
+
+ggsave("plot2.png", plot = plot2, width = 12, height = 8)
+plot2
+```
+
+## BMI Distribution by Diabetes Status
+
+The density plot shows the distribution of BMI across diabetic and non-diabetic patients. Diabetic patients tend to have a higher BMI, with a peak around 30, highlighting the role of obesity as a key risk factor for diabetes.
+
+```{r, message=FALSE, warning=FALSE}
+# Relationship between HbA1c and Blood Glucose Level
+plot3 <- ggplot(diabetes_data, aes(x = HbA1c_level, y = blood_glucose_level, color = diabetes)) +
+  geom_point(alpha = 0.7) +
+  labs(
+    title = "HbA1c vs Blood Glucose Level by Diabetes Status",
+    x = "HbA1c Level",
+    y = "Blood Glucose Level"
+  ) +
+  theme_minimal()
+
+ggsave("plot3.png", plot = plot3, width = 12, height = 8)
+plot3
+```
+
+## HbA1c vs. Blood Glucose Level Scatter Plot
+
+The scatter plot reveals a strong positive relationship between HbA1c_level and blood_glucose_level. Diabetic patients (in blue) generally have higher levels of both, making these variables critical in diabetes prediction.
+
+Dashboard:
+
+```{r, message=FALSE, warning=FALSE}
+# Combine the plots
+dashboard <- grid.arrange(
+  plot1, plot2, plot3,
+  ncol = 2,  
+  top = "Diabetes Prediction Dashboard" 
+)
+
+# Save 
+ggsave("dashboard.png", plot = dashboard, width = 12, height = 8)
+```
+
