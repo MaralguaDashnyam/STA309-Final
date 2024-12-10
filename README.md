@@ -1,117 +1,51 @@
-# STA309-Final-Hera-Dashnyam
-# Author: Hera Dashnyam
-# Date: 2024-12-10
+# STA309-Final: Diabetes Prediction Project
 
-# --------------------------------------------------
+**Author:** Hera Dashnyam  
+**Date:** December 10, 2024  
 
-# SETUP
+---
 
-# Knitr setup
-knitr::opts_chunk$set(echo = TRUE)
+## Overview
 
-# --------------------------------------------------
+This repository contains the final project for STA309, focusing on diabetes prediction using statistical and machine learning models. The goal is to analyze the relationships between patient attributes (e.g., BMI, glucose, HbA1c levels) and diabetes status, while comparing the performance of logistic regression, decision trees, and random forest models.
 
-# PART 1: DATA HANDLING & MODELING
+The project includes:  
+1. **An `.Rmd` file** with detailed code and commentary for every step of the analysis.  
+2. **This README** summarizing the project results and key insights, alongside visualizations.  
+3. **Plots and screenshots** to demonstrate key findings and the interactive dashboard.
 
-## Load the Data
+For a full explanation of the methodology and detailed implementation, refer to the [`STA309-Final-Hera-Dashnyam.Rmd`](STA309-Final-Hera-Dashnyam.Rmd) file.
 
-# Required libraries
-library(tidyverse)
-library(caret)
-library(randomForest)
-library(rpart)
-library(rpart.plot)
-library(gridExtra)
-library(ggplot2)
+---
 
-# The data
-diabetes_data <- read_csv("diabetes_data.csv")
+## See Part 1: Data Handling & Modeling, Part 2: Modeling, & Part 3: Evaluation from the RMD.
 
-## Data Cleaning
+## Part 4: Visualization
 
-# Categorical variables into factors
-diabetes_data <- diabetes_data %>%
-  mutate(
-    gender = as.factor(gender),
-    hypertension = as.factor(hypertension),
-    heart_disease = as.factor(heart_disease),
-    smoking_history = as.factor(smoking_history),
-    diabetes = as.factor(diabetes)
-  )
+### BMI Distribution
+The histogram below visualizes the distribution of BMI in the dataset. It highlights clusters and provides insights into patient demographics.
 
-## Splitting the Data
+![BMI Distribution](plot1.png)
 
-# Seed
-set.seed(123)
+---
 
-# Create training (80%) and test (20%) datasets
-train_index <- createDataPartition(diabetes_data$diabetes, p = 0.8, list = FALSE)
-train_data <- diabetes_data[train_index, ]
-test_data <- diabetes_data[-train_index, ]
+### HbA1c vs. Blood Glucose Level Scatter Plot
+The scatter plot reveals a strong positive relationship between HbA1c_level and blood_glucose_level. Diabetic patients (in blue) generally have higher levels of both, making these variables critical in diabetes prediction.
 
-# --------------------------------------------------
+![HbA1c vs. Blood Glucose Scatter Plot](plot2.png)
 
-# PART 2: MODELING
+---
 
-## Logistic Regression
+## Part 5: Dashboard
 
-# Fit logistic regression model
-log_model <- glm(diabetes ~ ., data = train_data, family = binomial)
+### Diabetes Prediction Dashboard
+An interactive dashboard was built to summarize key insights, allowing users to explore relationships between variables like age, BMI, and glucose. The dashboard includes visualizations, model predictions, and adjustable inputs for real-time analysis.
 
-# Summary of the logistic regression
-summary(log_model)
+![Dashboard Screenshot](plot3.png)
 
-## Decision Tree
+---
 
-# Fit a decision tree
-tree_model <- rpart(diabetes ~ ., data = train_data, method = "class")
+## Additional Details
 
-# Plot the tree
-rpart.plot(tree_model)
-
-## Random Forest
-
-# Fit a random forest
-rf_model <- randomForest(diabetes ~ ., data = train_data, ntree = 100)
-
-# Model performance
-print(rf_model)
-
-# --------------------------------------------------
-
-# PART 3: EVALUATION
-
-## Predictions
-
-# Logistic Regression predictions
-log_pred <- predict(log_model, test_data, type = "response")
-log_class <- ifelse(log_pred > 0.5, "1", "0")
-
-# Decision Tree predictions
-tree_pred <- predict(tree_model, test_data, type = "class")
-
-# Random Forest predictions
-rf_pred <- predict(rf_model, test_data, type = "response")
-
-## Confusion Matrices
-
-# Confusion matrix for logistic regression
-confusionMatrix(as.factor(log_class), test_data$diabetes)
-
-# Confusion matrix for decision tree
-confusionMatrix(tree_pred, test_data$diabetes)
-
-# Confusion matrix for random forest
-confusionMatrix(rf_pred, test_data$diabetes)
-
-# --------------------------------------------------
-
-# PART 4: VISUALIZATION
-
-## Visualization: BMI Distribution
-
-# Plot BMI distribution
-ggplot(diabetes_data, aes(x = BMI)) +
-  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
-  theme_minimal() +
-  labs(title = "BMI Distribution", x = "BMI", y = "Frequency")
+- For the complete step-by-step code and detailed explanations, refer to the [`STA309-Final-Hera-Dashnyam.Rmd`](STA309-Final-Hera-Dashnyam.Rmd) file.
+- The `.Rmd` file is structured to allow replication of results, from data cleaning to final visualizations and model comparisons.
